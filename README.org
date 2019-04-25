@@ -1,0 +1,102 @@
+* [B]AM [S]ample [H]aplotypes - denovo
+** About
+
+*bsh-denovo* aims to identify sites which show variation across a set of
+samples, and to randomly sample pseudo-haploid genotypes at these positions.
+Alignment data is supplied in a *multi-sample* BAM file, where samples are
+identified using read groups (*RG*-tags). Variable positions are identified by
+applying a set of filters within and across samples (see below). After
+identification of variable positions, a base is sampled randomly from each read
+group. The output is generated as a ~.map~ and ~.ped~ file pair (see [[https://www.cog-genomics.org/plink2/formats][here]] for
+file format descriptions) as used by PLINK.
+
+In addition to fully random sampling, *bsh-denovo* also implements the
+~Consensify~ method (see [[https://www.biorxiv.org/content/10.1101/498915v1][here]]).
+
+** Get it
+
+To use *bsh-denovo*, you will need a Linux machine where the gcc compiler,
+as well as the libz, libm and libpthread system libraries are
+installed.
+To acquire *bsh-denovo*, first clone the repository recursively:
+
+#+BEGIN_SRC sh
+git clone --recursive https://github.com/clwgg/bsh-denovo
+#+END_SRC
+
+This will clone both the *bsh-denovo* code, as well as the htslib module,
+which is its only external dependency. After cloning, first compile
+the submodule, and then the *bsh-denovo* code:
+
+#+BEGIN_SRC sh
+cd bsh-denovo
+make submodules
+make
+#+END_SRC
+
+This will create the *bsh-denovo* binary, which you can copy or move
+anywhere for subsequent use.
+
+*** Updating
+
+When updating to the current version, please make sure to also update the
+submodules:
+
+#+BEGIN_SRC sh
+git pull origin master
+git submodule update
+make submodules
+make
+#+END_SRC
+
+** Usage
+
+#+BEGIN_SRC bash :results output :exports results
+./bsh-denovo; echo
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+
+Usage: ./bsh-denovo [options] multi_RG.bam
+
+Options:
+	-d	Produce stats file for debugging and analytics.
+	-o	Output file base (default: out)
+
+    Position discovery (options here don't apply to the sampling of genotypes):
+	-m	Fraction missing data allowed (per position, across samples, default: 0.5).
+	-a	Minimum in-sample frequency a base must have to be considered (within sample, default: highest - random if tied).
+	-f	Minimum minor allele frequency across samples (default: 1/n).
+
+    Base sampling:
+	-c	Use Consensify method for base sampling.
+
+
+#+end_example
+
+*** Input BAM file
+The input BAM file should contain mapped reads from multiple samples, merged
+into one file. Samples are distinguished by their *RG*-tag, which can be set as an
+option in most mapping tools. These single-sample BAMs labelled with an *RG*-tag
+are then merged into one file using e.g. ~samtools merge~.
+
+*** A note on site discovery vs. base sampling
+Please note, that the filters ~-m~, ~-a~, and ~-f~ are only applied during
+position discovery. Restrictions on base sampling, such as the Consensify
+method, are applied subsequent to the position discovery, and may introduce
+additional missing data. Therefore, the final genotypes in the PED file may have
+more missing data, or a lower minimum minor allele frequency, than specified
+during position discovery. Similar filters on the final sampled genotypes can be
+applied for example using PLINK.
+
+*** The stats file
+The stats file is a TAB separated file for diagnostics and debugging. Please
+note that the file is written in plain text, and can get quite large for large
+sample sets.
+The stats file tracks the sequence ID and the position in that sequence for each
+identified site. At these sites, it reports the observed raw counts of A, C, G
+and T (without sampling), as well as the sampled base, for every sample (Read
+Group). The columns are:
+
+~"SEQ\tPOS\tRG\tA\tC\tG\tT\tSM\n"~
