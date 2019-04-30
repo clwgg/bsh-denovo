@@ -99,4 +99,4 @@ identified site. At these sites, it reports the observed raw counts of A, C, G
 and T (without sampling), as well as the sampled base, for every sample (Read
 Group). The columns are:
 
-~"SEQ\tPOS\tRG\tA\tC\tG\tT\tSM\n"~
+~SEQ\tPOS\tRG\tA\tC\tG\tT\tSM\n~
