@@ -272,7 +272,7 @@ int apply_filt(khash_t(rg) *rg_h, pos_filt *filt)
     }
   }
 
-  if (n <= filt->mis * (double)rg_n)
+  if (n < filt->mis * (double)rg_n)
     return 0;
   if (num_zero4(major) > 2)
     return 0;
