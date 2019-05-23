@@ -522,15 +522,16 @@ int main(int argc, char **argv)
   aux_t data = {NULL, NULL, NULL, NULL, 0};
 
   data.in = sam_open(argv[optind], "r");
-  data.h = sam_hdr_read(data.in);
-  //  data.idx = sam_index_load(data.in, argv[optind]);
-  //  data.min_mapQ = 1;
 
-  if (!data.in || !data.h) {
+  if (!data.in) {
     free_aux(data);
     printf("\nCannot open in.\n");
     return usage(2, argv);
   }
+
+  data.h = sam_hdr_read(data.in);
+  //  data.idx = sam_index_load(data.in, argv[optind]);
+  //  data.min_mapQ = 1;
 
   char *fn_buf = malloc(sizeof *base * (strlen(base) + 10));
   sprintf(fn_buf, "%s.map", base);
