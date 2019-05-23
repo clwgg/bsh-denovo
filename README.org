@@ -65,7 +65,7 @@ Options:
 	-o	Output file base (default: out)
 
     Position discovery (options here don't apply to the sampling of genotypes):
-	-m	Fraction missing data allowed (per position, across samples, default: 0.5).
+	-m	Data completeness required (per position, across samples, default: 0.5).
 	-a	Minimum in-sample frequency a base must have to be considered (within sample, default: highest - random if tied).
 	-f	Minimum minor allele frequency across samples (default: 1/n).
 

@@ -487,7 +487,7 @@ int usage(int r, char **argv)
   printf("\t-d\tProduce stats file for debugging and analytics.\n");
   printf("\t-o\tOutput file base (default: out)\n\n");
   printf("    Position discovery (options here don't apply to the sampling of genotypes):\n");
-  printf("\t-m\tFraction missing data allowed (per position, across samples, default: 0.5).\n");
+  printf("\t-m\tData completeness required (per position, across samples, default: 0.5).\n");
   printf("\t-a\tMinimum in-sample frequency a base must have to be considered (within sample, default: highest - random if tied).\n");
   printf("\t-f\tMinimum minor allele frequency across samples (default: 1/n).\n\n");
   printf("    Base sampling:\n");
