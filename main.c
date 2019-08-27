@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include "htslib/htslib/sam.h"
 #include "htslib/htslib/khash.h"
@@ -33,6 +34,8 @@ typedef struct pos_filt {
   double mis;
   double maj;
   double frq;
+  double mc;
+  int invar;
 } pos_filt;
 
 typedef struct opt_flag {
@@ -274,11 +277,21 @@ int apply_filt(khash_t(rg) *rg_h, pos_filt *filt)
 
   if (n < filt->mis * (double)rg_n)
     return 0;
+
+  if (filt->invar)
+    return 1;
   if (num_zero4(major) > 2)
     return 0;
   netw_sort4(major);
-  if (major[1]/(double)n < filt->frq)
-    return 0;
+  if (filt->mc > 0) {
+    // Use count-based filter
+    if (major[1] < filt->mc)
+      return 0;
+  } else {
+    // Use fraction-based filter
+    if (major[1]/(double)n < filt->frq)
+      return 0;
+  }
   return 1;
 }
 
@@ -485,11 +498,21 @@ int usage(int r, char **argv)
   printf("\nUsage: %s [options] multi_RG.bam\n\n", argv[0]);
   printf("Options:\n");
   printf("\t-d\tProduce stats file for debugging and analytics.\n");
-  printf("\t-o\tOutput file base (default: out)\n\n");
+  printf("\t-o\tOutput file base (default: out)\n");
+  printf("\t-q\tMinimum mapping quality (default: 0)\n\n");
   printf("    Position discovery (options here don't apply to the sampling of genotypes):\n");
-  printf("\t-m\tData completeness required (per position, across samples, default: 0.5).\n");
-  printf("\t-a\tMinimum in-sample frequency a base must have to be considered (within sample, default: highest - random if tied).\n");
-  printf("\t-f\tMinimum minor allele frequency across samples (default: 1/n).\n\n");
+  printf("\t-m\tData completeness required across samples.\n");
+  printf("\t  \t(per position, default: 0.5)\n");
+  printf("\t-a\tMinimum in-sample frequency a base must have to be considered.\n");
+  printf("\t  \t(within sample, default: highest count - random if tied)\n");
+  printf("\t-f\tMinimum minor allele frequency (MAF) across samples.\n");
+  printf("\t  \tCan be specified as a fraction or an absolute count.\n");
+  printf("\t  \tWhen fraction: MAF at each site relative to non-missing individuals.\n");
+  printf("\t  \tWhen count:    Minor allele count relative to total individual count.\n");
+  printf("\t  \t(default: 1/n)\n");
+  printf("\t-i\tReport also invariant sites.\n");
+  printf("\t  \tThis disables '-f', but '-a' and '-m' are still applied.\n");
+  printf("\t  \t(default: off)\n\n");
   printf("    Base sampling:\n");
   printf("\t-c\tUse Consensify method for base sampling.\n");
   printf("\n");
@@ -503,23 +526,28 @@ int main(int argc, char **argv)
   opt_flag opt = {0,0,0};
   char *base = "out";
   outfh out = {NULL, NULL, NULL};
-  pos_filt filt = {0.5, 0, 0};
+  pos_filt filt = {0.5, 0, 0, 0, 0};
+  aux_t data = {NULL, NULL, NULL, NULL, 0};
 
-  while (( elem = getopt(argc, argv, "o:dcm:a:f:") ) >= 0) {
+  while (( elem = getopt(argc, argv, "o:dcm:a:f:iq:") ) >= 0) {
     switch(elem) {
     case 'o': base = optarg; break;
     case 'd': opt.d = 1; break;
     case 'c': opt.s = 1; break;
+    case 'i': filt.invar = 1; break;
     case 'm': filt.mis = atof(optarg); break;
     case 'a': filt.maj = atof(optarg); break;
     case 'f': filt.frq = atof(optarg); break;
+    case 'q': data.min_mapQ = atoi(optarg); break;
     }
   }
 
   if (argc - optind != 1)
     return usage(1, argv);
 
-  aux_t data = {NULL, NULL, NULL, NULL, 0};
+  if (filt.frq >= 1) {
+    modf(filt.frq, &(filt.mc));
+  }
 
   data.in = sam_open(argv[optind], "r");
 

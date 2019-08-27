@@ -63,11 +63,21 @@ Usage: ./bsh-denovo [options] multi_RG.bam
 Options:
 	-d	Produce stats file for debugging and analytics.
 	-o	Output file base (default: out)
+	-q	Minimum mapping quality (default: 0)
 
     Position discovery (options here don't apply to the sampling of genotypes):
-	-m	Data completeness required (per position, across samples, default: 0.5).
-	-a	Minimum in-sample frequency a base must have to be considered (within sample, default: highest - random if tied).
-	-f	Minimum minor allele frequency across samples (default: 1/n).
+	-m	Data completeness required across samples.
+	  	(per position, default: 0.5)
+	-a	Minimum in-sample frequency a base must have to be considered.
+	  	(within sample, default: highest count - random if tied)
+	-f	Minimum minor allele frequency (MAF) across samples.
+	  	Can be specified as a fraction or an absolute count.
+	  	When fraction: MAF at each site relative to non-missing individuals.
+	  	When count:    Minor allele count relative to total individual count.
+	  	(default: 1/n)
+	-i	Report also invariant sites.
+	  	This disables '-f', but '-a' and '-m' are still applied.
+	  	(default: off)
 
     Base sampling:
 	-c	Use Consensify method for base sampling.
