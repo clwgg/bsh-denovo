@@ -410,6 +410,7 @@ int produce_ped(llist *list, outfh out)
 
 int output_gen(khash_t(rg) *rg_h, int tid, int p, aux_t data, llist *list, outfh out, opt_flag *opt)
 {
+  p = p + 1;                             // p is 0-based index - MAP specifications expect 1-based
   fprintf(out.map, "%s\t%s_%d\t0\t%d\n", data.h->target_name[tid], data.h->target_name[tid], p, p);
 
   char *bases = NULL;
