@@ -67,6 +67,7 @@ Options:
 
     Position discovery (options here don't apply to the sampling of genotypes):
 	-m	Data completeness required across samples.
+	  	Can be specified as a fraction (0 to 1) or an absolute count (>1).
 	  	(per position, default: 0.5)
 	-a	Minimum in-sample frequency a base must have to be considered.
 	  	(within sample, default: highest count - random if tied)

@@ -34,8 +34,11 @@ typedef struct pos_filt {
   double mis;
   double maj;
   double frq;
-  double mc;
-  int invar;
+
+  unsigned int i_mis : 1;
+  unsigned int i_frq : 1;
+
+  unsigned int i_var : 1;
 } pos_filt;
 
 typedef struct opt_flag {
@@ -275,23 +278,35 @@ int apply_filt(khash_t(rg) *rg_h, pos_filt *filt)
     }
   }
 
-  if (n < filt->mis * (double)rg_n)
-    return 0;
 
-  if (filt->invar)
+  if (filt->i_mis) {
+    // Use count-based filter
+    if (n < filt->mis)
+      return 0;
+  } else {
+    // Use fraction-based filter
+    if (n < filt->mis * (double)rg_n)
+      return 0;
+  }
+
+  if (filt->i_var)
     return 1;
+
   if (num_zero4(major) > 2)
     return 0;
+
   netw_sort4(major);
-  if (filt->mc > 0) {
+
+  if (filt->i_frq) {
     // Use count-based filter
-    if (major[1] < filt->mc)
+    if (major[1] < filt->frq)
       return 0;
   } else {
     // Use fraction-based filter
     if (major[1]/(double)n < filt->frq)
       return 0;
   }
+
   return 1;
 }
 
@@ -503,6 +518,7 @@ int usage(int r, char **argv)
   printf("\t-q\tMinimum mapping quality (default: 0)\n\n");
   printf("    Position discovery (options here don't apply to the sampling of genotypes):\n");
   printf("\t-m\tData completeness required across samples.\n");
+  printf("\t  \tCan be specified as a fraction (0 to 1) or an absolute count (>1).\n");
   printf("\t  \t(per position, default: 0.5)\n");
   printf("\t-a\tMinimum in-sample frequency a base must have to be considered.\n");
   printf("\t  \t(within sample, default: highest count - random if tied)\n");
@@ -527,7 +543,7 @@ int main(int argc, char **argv)
   opt_flag opt = {0,0,0};
   char *base = "out";
   outfh out = {NULL, NULL, NULL};
-  pos_filt filt = {0.5, 0, 0, 0, 0};
+  pos_filt filt = {0.5, 0, 0, 0, 0, 0};
   aux_t data = {NULL, NULL, NULL, NULL, 0};
 
   while (( elem = getopt(argc, argv, "o:dcm:a:f:iq:") ) >= 0) {
@@ -535,7 +551,7 @@ int main(int argc, char **argv)
     case 'o': base = optarg; break;
     case 'd': opt.d = 1; break;
     case 'c': opt.s = 1; break;
-    case 'i': filt.invar = 1; break;
+    case 'i': filt.i_var = 1; break;
     case 'm': filt.mis = atof(optarg); break;
     case 'a': filt.maj = atof(optarg); break;
     case 'f': filt.frq = atof(optarg); break;
@@ -547,7 +563,13 @@ int main(int argc, char **argv)
     return usage(1, argv);
 
   if (filt.frq >= 1) {
-    modf(filt.frq, &(filt.mc));
+    filt.frq = round(filt.frq);
+    filt.i_frq |= 1;
+  }
+
+  if (filt.mis > 1) {
+    filt.mis = round(filt.mis);
+    filt.i_mis |= 1;
   }
 
   data.in = sam_open(argv[optind], "r");
